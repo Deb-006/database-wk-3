@@ -1,0 +1,45 @@
+name: Check SQL Assignment Week 3
+
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      DB_DATABASE: salesDB
+      DB_USER: root
+      DB_PASSWORD: root
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Update and install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install mysql-server mysql-client -y
+
+      - name: Start MySQL
+        run: |
+          sudo /etc/init.d/mysql start
+          mysql -e "CREATE DATABASE IF NOT EXISTS $DB_DATABASE;" -u$DB_USER -p$DB_PASSWORD
+
+      - name: Execute and Test SQL answers
+        run: |
+              # Check if the answers.sql file exists
+              if [ ! -f ./answers.sql ]; then
+                echo "The answers.sql file is missing. Failing the workflow."
+                exit 1
+              fi
+        
+              # Check if the file is truly empty 
+              if ! grep -q '[^[:space:]#]' ./answers.sql; then
+                echo "The answers.sql file is empty or contains only comments. Failing the workflow."
+                exit 1
+              fi
+        
+              # Run the SQL script
+              sudo mysql -u$DB_USER -p$DB_PASSWORD $DB_DATABASE < ./answers.sql
+        
